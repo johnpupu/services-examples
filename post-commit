@@ -51,4 +51,4 @@ REV="$2"
 
 # Slack Subversion
 PROJECT=`/bin/echo $0 | /usr/bin/awk -F '/' '{print $(NF-2)}'`
-/root/slack/subversion.pl $REPOS $REV $PROJECT
+/root/github/services-examples/subversion.pl $REPOS $REV $PROJECT
