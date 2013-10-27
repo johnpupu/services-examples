@@ -36,6 +36,12 @@ use HTTP::Status qw(is_client_error);
 use LWP::UserAgent;
 use JSON;
 
+## For UTF-8
+$ENV{'LC_ALL'} = 'en_US.UTF-8';
+$ENV{'LANG'} = 'en_US.UTF-8';
+$ENV{'LC_CTYPE'} = 'en_US.ISO8859-1';
+## For Repository Name
+$ENV{'PATH'} = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/games:/usr/local/sbin:/usr/local/bin';
 
 #
 # Customizable vars. Set these to the information for your team
@@ -43,7 +49,6 @@ use JSON;
 
 my $opt_domain = "foo.slack.com"; # Your team's domain
 my $opt_token = ""; # The token from your SVN services page
-
 
 #
 # this script gets called by the SVN post-commit handler
@@ -55,12 +60,14 @@ my $opt_token = ""; # The token from your SVN services page
 # we need to find out what happened in that revision and then act on it
 #
 
-my $log = `/usr/bin/svnlook log -r $ARGV[1] $ARGV[0]`;
-my $who = `/usr/bin/svnlook author -r $ARGV[1] $ARGV[0]`;
+my $log = `svnlook log -r $ARGV[1] $ARGV[0]`;
+my $who = `svnlook author -r $ARGV[1] $ARGV[0]`;
+my $url = qq|http://svn.watcher.com.tw/svn/$ARGV[2]/|;
+my $revision = qq|$ARGV[2]:r$ARGV[1]|;
 chomp $who;
 
 my $payload = {
-	'revision'	=> $ARGV[1],
+	'revision'	=> $revision,
 	'url'		=> $url,
 	'author'	=> $who,
 	'log'		=> $log,
@@ -69,10 +76,9 @@ my $payload = {
 my $ua = LWP::UserAgent->new;
 $ua->timeout(15);
 
-my $req = POST( "https://${opt_domain}/services/hooks/subversion?token=${opt_token}", ['payload' => encode_json($payload)] );
+my $req = POST( "https://${opt_domain}/services/hooks/subversion?token=${opt_token}", Content_Type => 'form-data', Content => ['payload' => to_json( $payload )] );
 my $s = $req->as_string;
 print STDERR "Request:\n$s\n";
-
 my $resp = $ua->request($req);
 $s = $resp->as_string;
 print STDERR "Response:\n$s\n";
